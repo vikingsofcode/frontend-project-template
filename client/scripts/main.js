@@ -2,7 +2,7 @@ require('angular');
 require('angular-route');
 require('angular-resource');
 require('angular-animate');
-var views = '/views/';
+var views = 'views/';
 
 angular.module('vikingApp', ['ngRoute', 'ngResource', 'ngAnimate', 'basic']);
 
@@ -11,7 +11,7 @@ var app = angular.module('basic', []);
 app.config(['$routeProvider', '$locationProvider', '$httpProvider', function($routeProvider, $locationProvider, $httpProvider) {
   $routeProvider
     .when('/', {
-      templateUrl: views + 'front',
+      templateUrl: views + 'front.html',
       controller:  'frontController'
     });
   

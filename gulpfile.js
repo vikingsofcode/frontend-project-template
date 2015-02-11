@@ -5,14 +5,12 @@ var path        = require('path'),
     sync        = require('browser-sync'),
     jade        = require('gulp-jade'),
     minify      = require('gulp-minify-css'),
-    rename      = require('gulp-rename'),
     plumber     = require('gulp-plumber'),
     prefix      = require('gulp-autoprefixer'),
     stylus      = require('gulp-stylus'),
     source      = require('vinyl-source-stream'),
     watchify    = require('watchify'),
     uglify      = require('gulp-uglify'),
-    supervisor  = require('gulp-supervisor'),
     streamify   = require('gulp-streamify'),
     del         = require('del');
 
@@ -44,16 +42,6 @@ var paths = {
     watch:        'client/media/**/*.*',
     destination:  'build/client/media/'
   },
-  index: {
-    source:       'index.js',
-    watch:        'index.js',
-    destination:  'build'
-  },
-  server: {
-    source:       'server/**/*.js', 
-    watch:        'server/**/*.js', 
-    destination:  'build/server/'
-  },
   bower: {
     source:       'bower_components/',
     fontsdest:    'build/client/fonts'
@@ -72,11 +60,11 @@ gulp.task('clean-scripts', function(cb) {
 });
 
 gulp.task('clean-templates', function(cb) {
-  del([paths.templates.destination + '*.jade'], cb);
+  del([paths.templates.destination + '*.html'], cb);
 });
 
 gulp.task('clean-partials', function(cb) {
-  del([paths.partials.destination + '*.jade'], cb);
+  del([paths.partials.destination + '*.html'], cb);
 });
 
 gulp.task('clean-styles', function(cb) {
@@ -87,24 +75,15 @@ gulp.task('clean-media', function(cb) {
   del([paths.media.destination + '**/*.*'], cb);
 });
 
-gulp.task('clean-index', function(cb) {
-  del([paths.index.destination + '/index.js'], cb);
-});
-
-gulp.task('clean-server', function(cb) {
-  del([paths.server.destination  + '*.js'], cb);
-});
-
 gulp.task('scripts', ['clean-scripts'], function() {
   var bundle = browserify({
     entries: [paths.scripts.source],
     extensions: ['.js']
   });
 
-  var build = bundle.bundle({
-    debug: !production
-  }).on('error', handleError)
-    .pipe(source(paths.scripts.filename));
+  var build = bundle.bundle()
+                    .on('error', handleError)
+                    .pipe(source(paths.scripts.filename));
 
   if (production) {
     build.pipe(streamify(uglify()));
@@ -116,12 +95,14 @@ gulp.task('scripts', ['clean-scripts'], function() {
 
 gulp.task('templates', ['clean-templates'], function() {
   return gulp.src(paths.templates.source)
+             .pipe(jade({pretty: true}))
              .on('error', handleError)
              .pipe(gulp.dest(paths.templates.destination));
 });
 
 gulp.task('partials', ['clean-partials'], function() {
   return gulp.src(paths.partials.source)
+             .pipe(jade({pretty: true}))
              .on('error', handleError)
              .pipe(gulp.dest(paths.partials.destination));
 });
@@ -144,16 +125,6 @@ gulp.task('media', ['clean-media'], function() {
              .pipe(gulp.dest(paths.media.destination));
 });
 
-gulp.task('index', ['clean-index'], function() {
-  return gulp.src(paths.index.source)
-             .pipe(gulp.dest(paths.index.destination));
-});
-
-gulp.task('server', ['clean-server'], function() {
-    return gulp.src(paths.server.source)
-               .pipe(gulp.dest(paths.server.destination));
-});
-
 gulp.task('fontawesome', ['clean-styles'], function() {
   return gulp.src(paths.bower.source + 'fontawesome/css/*.min.css')
              .pipe(gulp.dest(paths.styles.destination));
@@ -164,54 +135,51 @@ gulp.task('fontawesome-fonts', ['fontawesome'], function() {
              .pipe(gulp.dest(paths.bower.fontsdest));
 });
 
-gulp.task('supervision', ['build'], function() {
-    supervisor('build/index.js', {
-      extensions: ['js,html'],
-      ignore: ['client/scripts', 'build/client/js/', 'server/']
-    });
-})
-
-gulp.task('watch', ['supervision'], function() {
+gulp.task('watch', function() {
 
   gulp.watch(paths.styles.watch, ['styles']);
+  gulp.watch(paths.scripts.source, ['scripts', sync.reload]);
   gulp.watch(paths.templates.watch, ['templates', sync.reload]);
   gulp.watch(paths.partials.watch, ['partials', sync.reload]);
   gulp.watch(paths.media.watch, ['media', sync.reload]);
-  gulp.watch(paths.index.watch, ['index', sync.reload]);
-  gulp.watch(paths.server.watch, ['server']);
 
   var config = {
-    files: [paths.scripts.destination, paths.styles.destination, paths.templates.destination, paths.partials.destination, paths.media.destination, paths.index.destination, './build/client/bundle.js'],
-    port: 7678,
-    proxy: 'localhost:6678',
-    open: false
+    files: [paths.scripts.destination, paths.templates.destination, paths.partials.destination, paths.media.destination, './build/client/bundle.js'],
+    port: 6678,
+    open: false,
+    server: {
+      baseDir: 'build/client'
+    }
   };
 
   sync(config, function(err, bs) {
-    if(!err) {
-      console.log("Happy deving!")
+    if(err) {
+      console.log(err);
     }
   });
 
-  var bundle = watchify({
+  var bundle = watchify(browserify({
     entries:    [paths.scripts.source],
-    extensions: ['.js']
-  });
+    extensions: ['.js'],
+    debug: true,
+    cache: {},
+    packageCache: {},
+    fullPaths: true
+  }));
 
   return bundle.on('update', function() {
     var build;
-    build = bundle.bundle({ debug: !production })
+    build = bundle.bundle()
                   .on('error', handleError)
                   .pipe(source(paths.scripts.filename));
     return build.pipe(gulp.dest(paths.scripts.destination))
                 .pipe(sync.reload({ stream: true }));
   }).emit('update');
 
-
 });
 
-gulp.task('build', ['templates', 'partials', 'styles', 'media', 'scripts', 'index', 'server', 'fontawesome', 'fontawesome-fonts']);
+gulp.task('build', ['templates', 'partials', 'styles', 'media', 'scripts', 'fontawesome', 'fontawesome-fonts']);
 
-gulp.task('start', ['build', 'supervision', 'watch']);
+gulp.task('start', ['build', 'watch']);
 
 gulp.task('default', ['build']);

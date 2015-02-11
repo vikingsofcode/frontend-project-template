@@ -1,6 +1,6 @@
-# Vikings of Code - project template
+# Vikings of Code - frontend template
 
-## Built with [Hapi](http://hapijs.com), [AngularJS](http://angularjs.com) and [Mongo](http://mongodb.org)
+## Built with [AngularJS](http://angularjs.com)
 ```
 git clone https://github.com/vikingsofcode/project-template.git <project name>
 cd <project name>
