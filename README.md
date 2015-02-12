@@ -2,7 +2,7 @@
 
 ## Built with [AngularJS](http://angularjs.com)
 ```
-git clone https://github.com/vikingsofcode/project-template.git <project name>
+git clone https://github.com/vikingsofcode/frontend-template.git <project name>
 cd <project name>
 npm install
 bower install
