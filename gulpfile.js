@@ -138,26 +138,18 @@ gulp.task('fontawesome-fonts', ['fontawesome'], function() {
 gulp.task('watch', function() {
 
   gulp.watch(paths.styles.watch, ['styles']);
-  gulp.watch(paths.scripts.source, ['scripts', sync.reload]);
-  gulp.watch(paths.templates.watch, ['templates', sync.reload]);
-  gulp.watch(paths.partials.watch, ['partials', sync.reload]);
-  gulp.watch(paths.media.watch, ['media', sync.reload]);
+  gulp.watch(paths.scripts.source, ['scripts']).on('change', sync.reload);
+  gulp.watch(paths.templates.watch, ['templates']).on('change', sync.reload);
+  gulp.watch(paths.partials.watch, ['partials']).on('change', sync.reload);
+  gulp.watch(paths.media.watch, ['media']).on('change', sync.reload);
 
   var config = {
-    files: [paths.styles.destination, paths.scripts.destination, paths.templates.destination, paths.partials.destination, paths.media.destination, './build/client/bundle.js'],
     port: 6678,
     open: false,
-    reloadDelay: 500,
     server: {
       baseDir: 'build/client'
     }
   };
-
-  sync(config, function(err, bs) {
-    if(err) {
-      console.log(err);
-    }
-  });
 
   var bundle = watchify(browserify({
     entries:    [paths.scripts.source],
@@ -168,6 +160,12 @@ gulp.task('watch', function() {
     fullPaths: true
   }));
 
+  sync(config, function(err, bs) {
+    if(err) {
+      console.log(err);
+    }
+  });
+
   return bundle.on('update', function() {
     var build;
     build = bundle.bundle()
@@ -177,10 +175,11 @@ gulp.task('watch', function() {
                 .pipe(sync.reload({ stream: true }));
   }).emit('update');
 
+
 });
 
 gulp.task('build', ['templates', 'partials', 'styles', 'media', 'scripts', 'fontawesome', 'fontawesome-fonts']);
 
-gulp.task('start', ['build', 'watch']);
+gulp.task('start', ['watch']);
 
 gulp.task('default', ['build']);
